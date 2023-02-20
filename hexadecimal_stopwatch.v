@@ -1,4 +1,5 @@
-module timer (clock, pause, reset, seven_segment_0, seven_segment_1, seven_segment_2, seven_segment_3);
+// Group 3 CPE102L/A13
+module hexadecimal_stopwatch (clock, pause, reset, seven_segment_0, seven_segment_1, seven_segment_2, seven_segment_3);
 
 // Inputs: 50 MHZ Clock, SW0 for the Pause Switch, SW1 for the Reset Switch
 input clock, pause, reset;
@@ -15,15 +16,8 @@ reg [3:0] seven_segment_register_1;
 reg [3:0] seven_segment_register_2;
 reg [3:0] seven_segment_register_3;
 
-// Timer for each seven segment LED
-reg [4:0] segment_counter;
-localparam	segment_counter_0 = 5'b00001,
-			segment_counter_1 = 5'b00010,
-			segment_counter_2 = 5'b00100,
-			segment_counter_3 = 5'b01000,
-			finished = 5'b10000;
 
-// Timer for the clock
+// Timer for the clock, Since the Clock is 50 MHZ, one clock cycle would be 50,000,000
 reg [32:0] clock_counter;
 localparam clock_cycle = 50000000;
 
@@ -152,86 +146,67 @@ end
 
 always @ (posedge clock) begin
 
-	// Reset Function
+	// If the reset switch [SW1] is on, the clock counter and all the registers of the seven segment will return to zero.
 	if (reset == 1) begin
 		clock_counter <= 0;
-		segment_counter <= segment_counter_0;
 		seven_segment_register_0 <= S0; 
 		seven_segment_register_1 <= S0;
 		seven_segment_register_2 <= S0;
 		seven_segment_register_3 <= S0;
-		
-	// Pause Function
+	// If the pause switch [SW0] is on, the clock counter would return to zero, while the segment registers will keep their values
 	end else if (pause == 1) begin
 		clock_counter <= 0;
-		segment_counter <= segment_counter;
 		seven_segment_register_0 <= seven_segment_register_0; 
-		seven_segment_register_1 <= seven_segment_register_0;
-		seven_segment_register_2 <= seven_segment_register_0;
-		seven_segment_register_3 <= seven_segment_register_0;
+		seven_segment_register_1 <= seven_segment_register_1;
+		seven_segment_register_2 <= seven_segment_register_2;
+		seven_segment_register_3 <= seven_segment_register_3;
+	/*
+	The stopwatch function:
+	
+	The clock counter will count until one clock cycle
+	If seven_segment_register_0 is not 7'b1111111, it will increment until it is equal to the condition
+	Once the condition is met, the seven_segment_register_0 will reset to zero and increment the next register
+	This goes the same for all register until seven_segment_register_3, which will hold the values until reset
+	*/
 	end else begin
-		
-		// Determines which segment counter to use
-		if (seven_segment_register_0 == SF) begin
-			segment_counter <= segment_counter_1;
-		end else if (seven_segment_register_1 == SF) begin
-			segment_counter <= segment_counter_2;
-		end else if (seven_segment_register_2 == SF) begin
-			segment_counter <= segment_counter_3;
-		end else if (seven_segment_register_3 <= SF) begin
-			segment_counter <= finished;
+		clock_counter <= clock_counter + 1;
+		if (clock_counter == clock_cycle) begin 
+			if (seven_segment_register_0 == SF) begin
+				seven_segment_register_0 <= 0;
+				seven_segment_register_1 <= seven_segment_register_1 + 1;
+				clock_counter <= 0;
+			end else begin
+				seven_segment_register_0 <= seven_segment_register_0 + 1;
+				clock_counter <= 0;
+			end
+			
+			if (seven_segment_register_1 == SF) begin
+				seven_segment_register_0 <= 0;
+				seven_segment_register_1 <= 0;
+				seven_segment_register_2 <= seven_segment_register_2 + 1;
+				clock_counter <= 0;
+			end
+			
+			if (seven_segment_register_2 == SF) begin
+				seven_segment_register_0 <= 0;
+				seven_segment_register_1 <= 0;
+				seven_segment_register_2 <= 0;
+				seven_segment_register_3 <= seven_segment_register_3 + 1;
+				clock_counter <= 0;
+			end
+			
+			if (seven_segment_register_3 == SF) begin
+				seven_segment_register_0 <= SF;
+				seven_segment_register_1 <= SF;
+				seven_segment_register_2 <= SF;
+				seven_segment_register_3 <= SF;
+				clock_counter <= 0;
+			end
 		end
-		
-		// Increments the seven segment register depending on the segment counter
-		case (segment_counter)
-			segment_counter_0:
-				begin
-					clock_counter <= clock_counter + 1;
-					segment_counter <= segment_counter_0;
-					if (clock_counter <= clock_cycle) begin
-						seven_segment_register_0 <= seven_segment_register_0 + 1;
-						clock_counter <= 0;
-					end
-				end
-			segment_counter_1:
-				begin
-					clock_counter <= clock_counter + 1;
-					segment_counter <= segment_counter_1;
-					if (clock_counter <= clock_cycle) begin
-						seven_segment_register_1 <= seven_segment_register_1 + 1;
-						clock_counter <= 0;
-					end
-				end
-			segment_counter_2:
-				begin
-					clock_counter <= clock_counter + 1;
-					segment_counter <= segment_counter_2;
-					if (clock_counter <= clock_cycle) begin
-						seven_segment_register_2 <= seven_segment_register_2 + 1;
-						clock_counter <= 0;
-					end
-				end
-			segment_counter_3:
-				begin
-					clock_counter <= clock_counter + 1;
-					segment_counter <= segment_counter_3;
-					if (clock_counter <= clock_cycle) begin
-						seven_segment_register_3 <= seven_segment_register_3 + 1;
-						clock_counter <= 0;
-					end
-				end
-			finished: 
-				begin
-					seven_segment_register_0 <= SF; 
-					seven_segment_register_1 <= SF;
-					seven_segment_register_2 <= SF;
-					seven_segment_register_3 <= SF;
-				end
-			default segment_counter <= segment_counter_0;
-		endcase
 	end
 end
 
 endmodule
+
 
 
