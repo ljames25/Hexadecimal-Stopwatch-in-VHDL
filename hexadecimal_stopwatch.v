@@ -1,4 +1,4 @@
-module hexadecimal_stopwatch (clock, pause, reset, seven_segment_0, seven_segment_1, seven_segment_2, seven_segment_3);
+module timer (clock, pause, reset, seven_segment_0, seven_segment_1, seven_segment_2, seven_segment_3);
 
 // Inputs: 50 MHZ Clock, SW0 for the Pause Switch, SW1 for the Reset Switch
 input clock, pause, reset;
@@ -9,11 +9,13 @@ output reg [6:0]seven_segment_1;
 output reg [6:0]seven_segment_2;
 output reg [6:0]seven_segment_3;
 
+// Creates the input code
 reg [3:0] seven_segment_register_0;
 reg [3:0] seven_segment_register_1;
 reg [3:0] seven_segment_register_2;
 reg [3:0] seven_segment_register_3;
 
+// Timer for each seven segment LED
 reg [4:0] segment_counter;
 localparam	segment_counter_0 = 5'b00001,
 			segment_counter_1 = 5'b00010,
@@ -21,9 +23,11 @@ localparam	segment_counter_0 = 5'b00001,
 			segment_counter_3 = 5'b01000,
 			finished = 5'b10000;
 
+// Timer for the clock
 reg [32:0] clock_counter;
 localparam clock_cycle = 50000000;
 
+// Binary form for each hexadecimal values
 localparam	H0 = 7'b1000000,
 			H1 = 7'b1111001,
 			H2 = 7'b0100100,
@@ -41,6 +45,7 @@ localparam	H0 = 7'b1000000,
 			HE = 7'b0110000,
 			HF = 7'b0111000;
 
+// BCD of each input
 localparam	S0 = 4'b0000,
 			S1 = 4'b0001,
 			S2 = 4'b0010,
@@ -60,6 +65,7 @@ localparam	S0 = 4'b0000,
 
 always @ (*) begin
 
+	// Translates the input of seven_segment_0 to a hexadecimal output
 	case (seven_segment_register_0)
 		S0: seven_segment_0 <= H0;
 		S1: seven_segment_0 <= H1;
@@ -79,7 +85,8 @@ always @ (*) begin
 		SF: seven_segment_0 <= HF; 
 		default: seven_segment_0 <= H0;
 	endcase
-
+	
+	// Translates the input of seven_segment_1 to a hexadecimal output
 	case (seven_segment_register_1)
 		S0: seven_segment_1 <= H0;
 		S1: seven_segment_1 <= H1;
@@ -100,6 +107,7 @@ always @ (*) begin
 		default: seven_segment_1 <= H0;
 	endcase
 
+	// Translates the input of seven_segment_2 to a hexadecimal output
 	case (seven_segment_register_2)
 		S0: seven_segment_2 <= H0;
 		S1: seven_segment_2 <= H1;
@@ -120,6 +128,7 @@ always @ (*) begin
 		default: seven_segment_2 <= H0;
 	endcase
 
+	// Translates the input of seven_segment_3 to a hexadecimal output
 	case (seven_segment_register_3)
 		S0: seven_segment_3 <= H0;
 		S1: seven_segment_3 <= H1;
@@ -143,6 +152,7 @@ end
 
 always @ (posedge clock) begin
 
+	// Reset Function
 	if (reset == 1) begin
 		clock_counter <= 0;
 		segment_counter <= segment_counter_0;
@@ -150,6 +160,8 @@ always @ (posedge clock) begin
 		seven_segment_register_1 <= S0;
 		seven_segment_register_2 <= S0;
 		seven_segment_register_3 <= S0;
+		
+	// Pause Function
 	end else if (pause == 1) begin
 		clock_counter <= 0;
 		segment_counter <= segment_counter;
@@ -158,7 +170,8 @@ always @ (posedge clock) begin
 		seven_segment_register_2 <= seven_segment_register_0;
 		seven_segment_register_3 <= seven_segment_register_0;
 	end else begin
-
+		
+		// Determines which segment counter to use
 		if (seven_segment_register_0 == SF) begin
 			segment_counter <= segment_counter_1;
 		end else if (seven_segment_register_1 == SF) begin
@@ -168,7 +181,8 @@ always @ (posedge clock) begin
 		end else if (seven_segment_register_3 <= SF) begin
 			segment_counter <= finished;
 		end
-
+		
+		// Increments the seven segment register depending on the segment counter
 		case (segment_counter)
 			segment_counter_0:
 				begin
